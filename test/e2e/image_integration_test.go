@@ -1,6 +1,6 @@
 //go:build integration
 
-package dockerimage
+package e2e
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
+	dockerimage "github.com/wharf/wharf/pkg/image" // 👈 aliased to avoid clash
 )
 
 func TestIntegration_ImageOperations(t *testing.T) {
@@ -17,24 +18,24 @@ func TestIntegration_ImageOperations(t *testing.T) {
 		t.Skip("set E2E_DOCKER=1 to run integration tests")
 	}
 
-	contextValue := context.Background()
+	ctx := context.Background()
 	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		t.Fatalf("failed to create docker client: %v", err)
 	}
 
-	if _, err := dockerClient.Ping(contextValue); err != nil {
+	if _, err := dockerClient.Ping(ctx); err != nil {
 		t.Skipf("docker not available: %v", err)
 	}
 
-	rc, err := dockerClient.ImagePull(contextValue, "alpine:latest", image.PullOptions{})
+	rc, err := dockerClient.ImagePull(ctx, "alpine:latest", image.PullOptions{})
 	if err != nil {
 		t.Fatalf("failed to pull image: %v", err)
 	}
 	io.Copy(io.Discard, rc)
 	rc.Close()
 
-	images, err := GetAll(contextValue, dockerClient)
+	images, err := dockerimage.GetAll(ctx, dockerClient)
 	if err != nil {
 		t.Fatalf("GetAll failed: %v", err)
 	}
@@ -43,15 +44,15 @@ func TestIntegration_ImageOperations(t *testing.T) {
 		t.Fatal("expected at least one image after pull")
 	}
 
-	if err := Tag(contextValue, dockerClient, "alpine:latest", "alpine:test-tag"); err != nil {
+	if err := dockerimage.Tag(ctx, dockerClient, "alpine:latest", "alpine:test-tag"); err != nil {
 		t.Fatalf("Tag failed: %v", err)
 	}
 
-	if _, err := Remove(contextValue, dockerClient, "alpine:test-tag", image.RemoveOptions{Force: true}); err != nil {
+	if _, err := dockerimage.Remove(ctx, dockerClient, "alpine:test-tag", image.RemoveOptions{Force: true}); err != nil {
 		t.Fatalf("Remove failed: %v", err)
 	}
 
-	if _, err := Prune(contextValue, dockerClient); err != nil {
+	if _, err := dockerimage.Prune(ctx, dockerClient); err != nil {
 		t.Fatalf("Prune failed: %v", err)
 	}
 }
