@@ -10,7 +10,7 @@ import (
 
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
-	dockerimage "github.com/wharf/wharf/pkg/image" // 👈 aliased to avoid clash
+	dockerimage "github.com/wharf/wharf/pkg/image" // aliased to avoid clash
 )
 
 func TestIntegration_ImageOperations(t *testing.T) {
